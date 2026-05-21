@@ -1,0 +1,73 @@
+estado 0
+A:  
+D:  
+  LTS1: (HinToZenDL | ZenToHinDL | LockHinDL | LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+  LTS2: (HinZenSend | HinZenSend | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+estado 1
+A: strong tau (LTS1)
+D: weak tau (LTS2)
+  LTS1: (acqLockZen!.sendMoney.relLockZen!.relLockHin!.HinToZenDL | ZenToHinDL | relLockHin?.LockHinDL | LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+  LTS2: (acqLockZen!.sendMoney.relLockHin!.relLockZen!.HinZenSend | HinZenSend | relLockHin?.LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+estado 2
+A: strong tau (LTS1)
+D: weak tau (LTS2)
+  LTS1: (acqLockZen!.sendMoney.relLockZen!.relLockHin!.HinToZenDL | acqLockHin!.sendMoney.relLockHin!.relLockZen!.ZenToHinDL | relLockHin?.LockHinDL | relLockZen?.LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+  LTS2: (sendMoney.relLockHin!.relLockZen!.HinZenSend | HinZenSend | relLockHin?.LockHin | relLockZen?.LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+estado 3
+A: strong sendMoney (LTS2)
+D: Impossivel (LTS1)
+  LTS1: 
+  LTS2: (relLockHin!.relLockZen!.HinZenSend | HinZenSend | relLockHin?.LockHin | relLockZen?.LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+Backtrack para o ultimo estado onde o defensor tinha outras escolhas possíveis (i.e. estado 2)
+
+estado 4
+A: strong tau (LTS1)
+D: weak tau (LTS2)
+  LTS1: (acqLockZen!.sendMoney.relLockZen!.relLockHin!.HinToZenDL | acqLockHin!.sendMoney.relLockHin!.relLockZen!.ZenToHinDL | relLockHin?.LockHinDL | relLockZen?.LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+  LTS2: (acqLockZen!.sendMoney.relLockHin!.relLockZen!.HinZenSend | HinZenSend | relLockHin?.LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+estado 5
+A: strong tau (LTS2)
+D: weak tau (LTS1)
+  LTS1: (acqLockZen!.sendMoney.relLockZen!.relLockHin!.HinToZenDL | acqLockHin!.sendMoney.relLockHin!.relLockZen!.ZenToHinDL | relLockHin?.LockHinDL | relLockZen?.LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen} 
+  LTS2: (sendMoney.relLockHin!.relLockZen!.HinZenSend | HinZenSend | relLockHin?.LockHin | relLockZen?.LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+Este estado é equivalente ao estado 2
+
+backtrack para o ultimo estado onde o defensor tinha outras escolhas possíveis (i.e. estado 1)
+
+estado 6
+A: strong tau (LTS1)
+D: weak tau (LTS2)
+  LTS1: (acqLockZen!.sendMoney.relLockZen!.relLockHin!.HinToZenDL | ZenToHinDL | relLockHin?.LockHinDL | LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+  LTS2: (HinZenSend | HinZenSend | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+estado 7
+A: strong tau (LTS1)
+D: weak tau (LTS2)
+  LTS1: (acqLockZen!.sendMoney.relLockZen!.relLockHin!.HinToZenDL | acqLockHin!.sendMoney.relLockHin!.relLockZen!.ZenToHinDL | relLockHin?.LockHinDL | relLockZen?.LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+  LTS2: (acqLockZen!.sendMoney.relLockHin!.relLockZen!.HinZenSend | HinZenSend | relLockHin?.LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+Este estado é equivalente ao estado 4
+
+backtrack para o ultimo estado onde o defensor tinha outras escolhas possíveis (i.e. estado 7)
+
+estado 8
+A: strong tau (LTS1)
+D: weak tau (LTS2)
+  LTS1: (acqLockZen!.sendMoney.relLockZen!.relLockHin!.HinToZenDL | acqLockHin!.sendMoney.relLockHin!.relLockZen!.ZenToHinDL | relLockHin?.LockHinDL | relLockZen?.LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+  LTS2: (HinZenSend | HinZenSend | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+estado 9
+A: strong tau (LTS2)
+D: weak tau (LTS1)
+  LTS1: (acqLockZen!.sendMoney.relLockZen!.relLockHin!.HinToZenDL | acqLockHin!.sendMoney.relLockHin!.relLockZen!.ZenToHinDL | relLockHin?.LockHinDL | relLockZen?.LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+  LTS2: (acqLockZen!.sendMoney.relLockHin!.relLockZen!.HinZenSend | HinZenSend | relLockHin?.LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+Este estado é equivalente ao estado 7
+
+Seria possível fazer backtrack denovo escolhendo no LTS2 o outro HinZenSend, mas os resultados seriam equivalentes
