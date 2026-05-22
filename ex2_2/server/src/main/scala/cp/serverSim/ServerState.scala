@@ -6,8 +6,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class Worker(
-    tasks: mutable.Queue[String],
-    content: AtomicReference[Array[String]]
+    tasks: mutable.Queue[(String, Option[Int])],
+    content: AtomicReference[List[String]]
 ) extends Thread {
   setDaemon(true)
   def poll() = tasks.synchronized {
@@ -17,20 +17,16 @@ class Worker(
   }
 
   override def run() = while (true) {
-    val task = poll()
-    val args = task
-      .split(" ")
-      .map(_.trim)
-      .filter(_.nonEmpty) // não separar por espaços desta forma
-    var delay = 0
-    if (args.size >= 4 && args(3) == "@") {
-      delay = args(3).toInt
+    val (str, delayOpt) = poll()
+    var delay = delayOpt match {
+      case Some(d) => d
+      case None    => 0
     }
     Thread.sleep(delay * 1000)
 
     val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
     val element =
-      "[" ++ LocalDateTime.now().format(formatter) ++ "] " ++ args(1)
+      "[" ++ LocalDateTime.now().format(formatter) ++ "] " ++ str
     content.updateAndGet { old =>
       old :+ element
     }
@@ -42,9 +38,9 @@ class ServerState(n: Int) {
   // TODO: extend the state of the server
 
   val counter = new AtomicInteger(0)
-  val content = new AtomicReference[Array[String]](Array.empty[String])
+  val content = new AtomicReference[List[String]](List.empty[String])
 
-  val tasks = mutable.Queue[String]()
+  val tasks = mutable.Queue[(String, Option[Int])]()
   (0 until n).map(i => {
     val worker = new Worker(tasks, content)
     worker.start()

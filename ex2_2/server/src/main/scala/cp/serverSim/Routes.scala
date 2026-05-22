@@ -11,47 +11,61 @@ object Routes {
   private val state = new ServerState(6)
 
   val routes: IO[HttpRoutes[IO]] = {
-    IO{HttpRoutes.of[IO] {
+    IO {
+      HttpRoutes.of[IO] {
 
-      // React to a "status" request
-      case GET -> Root / "status" =>
-        Ok(state.toHtml)
-          .map(addCORSHeaders)
-          .map(_.withContentType(org.http4s.headers.`Content-Type`(MediaType.text.html)))
+        // React to a "status" request
+        case GET -> Root / "status" =>
+          Ok(state.toHtml)
+            .map(addCORSHeaders)
+            .map(
+              _.withContentType(
+                org.http4s.headers.`Content-Type`(MediaType.text.html)
+              )
+            )
 
-          // React to a "reset" request
-      case GET -> Root / "reset" =>
-        state.counter.set(0)
-        state.content.set(Array.empty[String])
-        Ok("State reset!")
-          .map(addCORSHeaders)
+        // React to a "reset" request
+        case GET -> Root / "reset" =>
+          var oldValue = state.counter.get
+          var newValue = 0
+          while (!state.counter.compareAndSet(oldValue, newValue)) {
+            oldValue = state.counter.get
+          }
+          var oldValue1 = state.content.get
+          var newValue1 = List.empty[String]
+          while (!state.content.compareAndSet(oldValue1, newValue1)) {
+            oldValue1 = state.content.get
+          }
+          Ok("State reset!")
+            .map(addCORSHeaders)
 
-          // React to a "run-simulation" request
-      case req@GET -> Root / "run-simulation" =>
-        val cmdOpt = req.uri.query.params.get("cmd")
-        val userIp = req.remoteAddr.getOrElse("unknown")
+        // React to a "run-simulation" request
+        case req @ GET -> Root / "run-simulation" =>
+          val cmdOpt = req.uri.query.params.get("cmd")
+          val userIp = req.remoteAddr.getOrElse("unknown")
 
-        //// printing to the terminal instead of a logging file
-        //println(">>> got run-simulation!")
-        //println(s">>> Cmd: ${cmdOpt}")
-        //println(s">>> userIP: $userIp")
+          //// printing to the terminal instead of a logging file
+          // println(">>> got run-simulation!")
+          // println(s">>> Cmd: ${cmdOpt}")
+          // println(s">>> userIP: $userIp")
 
-        cmdOpt match {
-          case Some(cmd) =>
-            // calling the `runProcess` method, which simulates running a process
-            Ok(runProcess(cmd, userIp.toString))
-              .map(addCORSHeaders)
+          cmdOpt match {
+            case Some(cmd) =>
+              // calling the `runProcess` method, which simulates running a process
+              Ok(runProcess(cmd, userIp.toString))
+                .map(addCORSHeaders)
 
-          case None =>
-            BadRequest("⚠️ Command not provided. Use /run-simulation?cmd=<your_commands>")
-              .map(addCORSHeaders)
-        }
-    }
+            case None =>
+              BadRequest(
+                "⚠️ Command not provided. Use /run-simulation?cmd=<your_commands>"
+              )
+                .map(addCORSHeaders)
+          }
+      }
     }
   }
 
-
-  def asynchr(s: String) = {
+  def asynchr(s: (String, Option[Int])) = {
     state.tasks.synchronized {
       state.tasks.enqueue(s)
       // now notifying
@@ -59,33 +73,83 @@ object Routes {
     }
   }
 
+  def parse(s: String): Option[((String, Option[Int]), Option[List[Int]])] = {
+    var str = s
+    val command = 0
+    str = str.trim
+    val print_command = str.takeWhile(c => c != ' ')
+    if (print_command != "print") return None
+    str = str.dropWhile(c => c != ' ')
+    str = str.dropWhile(c => c == ' ')
+    if (str.isEmpty || str(0) != '"') return None
+
+    str = str.tail
+    val word = str.takeWhile(c => c != '"')
+    str = str.dropWhile(c => c != '"')
+    if (str.isEmpty || str(0) != '"') return None
+
+    str = str.tail.trim
+    var delayOpt: Option[Int] = None
+    if (str.length > 0 && str(0) == '@') {
+      str = str.tail.trim
+      val delay = str.takeWhile(n => n.isDigit)
+      if (delay.isEmpty) return None
+
+      delayOpt = Some(delay.toInt)
+      str = str.dropWhile(n => n.isDigit).trim
+    }
+
+    var aftersOpt: Option[List[Int]] = None
+    val after_command = str.takeWhile(c => c.isLetter)
+    if (after_command != "after" && !after_command.isEmpty) return None
+    str = str.dropWhile(c => c.isLetter)
+    val afters = str.split(",").map(_.trim).filter(_.nonEmpty)
+    if (!afters.forall(n => n.forall(m => m.isDigit))) return None
+    aftersOpt = Some(afters.map(n => n.toInt).toList)
+    Some(((word, delayOpt), aftersOpt))
+  }
 
   /** Run a given process and collect its output. */
-  /**
-   * This method simulates running a process. It should be replaced with actual code
-   * to simulate the process using a thread pool. The `Thread.sleep` is just mimicking
-   * the time to process the comand, and should be removed.
-   *
-   * @param cmd the command to run, which can be a single command or multiple commands separated by ";"
-   * @param userIp the IP address of the user who sent the request, used for logging purposes
-   * @return a string confirming the received command and user IP, which will be sent back to the client as a response
-   */
+  /** This method simulates running a process. It should be replaced with actual
+    * code to simulate the process using a thread pool. The `Thread.sleep` is
+    * just mimicking the time to process the comand, and should be removed.
+    *
+    * @param cmd
+    *   the command to run, which can be a single command or multiple commands
+    *   separated by ";"
+    * @param userIp
+    *   the IP address of the user who sent the request, used for logging
+    *   purposes
+    * @return
+    *   a string confirming the received command and user IP, which will be sent
+    *   back to the client as a response
+    */
 
   private def runProcess(cmd: String, userIp: String): String = {
     val cnt = state.counter.incrementAndGet()
     val cmds = cmd.split(";").map(_.trim).filter(_.nonEmpty)
-    cmds.foreach(asynchr)
+    cmds.foreach(i => {
+      val parse_result = parse(i)
+      parse_result match {
+        case Some((c)) => {
+          asynchr(c._1)
+        }
+        case None => {}
+      }
+    })
 
     // Printing the received command and user IP to the logs
-    logger.info(s"🔹 Starting processes (${cnt}) for user $userIp:" +
-      s"${cmds.map("\n - "+_).mkString}")
+    logger.info(
+      s"🔹 Starting processes (${cnt}) for user $userIp:" +
+        s"${cmds.map("\n - " + _).mkString}"
+    )
 
     // TODO:Run process here. The `Thread.sleep` should be removed.
-    val output: String = s"[${cnt}] Received request from $userIp: ${cmds.mkString(" | ")}"
+    val output: String =
+      s"[${cnt}] Received request from $userIp: ${cmds.mkString(" | ")}"
 
     output
   }
-
 
   /** Add extra headers, required by the client. */
   def addCORSHeaders(response: Response[IO]): Response[IO] = {
@@ -97,5 +161,3 @@ object Routes {
     )
   }
 }
-
-
