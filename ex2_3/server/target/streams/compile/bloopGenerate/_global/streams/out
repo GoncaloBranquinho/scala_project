@@ -1,0 +1,4 @@
+[debug] [server] Classpath dependencies List()
+[debug] [server] Dependencies from configurations List()
+[debug] Bloop wrote the configuration of project 'server' to '/home/goncalo/Projects/scala_project/ex2_2/server/.bloop/server.json'
+[success] Generated .bloop/server.json
