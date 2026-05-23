@@ -1,0 +1,4 @@
+[0m[[0m[0mdebug[0m] [0m[0m[server-build] Classpath dependencies List()[0m
+[0m[[0m[0mdebug[0m] [0m[0m[server-build] Dependencies from configurations List()[0m
+[0m[[0m[0mdebug[0m] [0m[0mBloop wrote the configuration of project 'server-build' to '/home/goncalo/Projects/scala_project/ex2_4/server/project/.bloop/server-build.json'[0m
+[0m[[0m[32msuccess[0m] [0m[0mGenerated .bloop/server-build.json[0m

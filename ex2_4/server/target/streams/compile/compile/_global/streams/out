@@ -1,0 +1,7 @@
+[0m[[0m[31merror[0m] [0m[0m/home/goncalo/Projects/scala_project/ex2_4/server/src/main/scala/cp/serverSim/ServerState.scala:54:21: reassignment to val[0m
+[0m[[0m[31merror[0m] [0m[0m        strChannel1 = str0[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0m/home/goncalo/Projects/scala_project/ex2_4/server/src/main/scala/cp/serverSim/ServerState.scala:57:21: reassignment to val[0m
+[0m[[0m[31merror[0m] [0m[0m        strChannel2 = str0[0m
+[0m[[0m[31merror[0m] [0m[0m                    ^[0m
+[0m[[0m[31merror[0m] [0m[0mtwo errors found[0m
