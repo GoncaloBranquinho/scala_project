@@ -16,7 +16,7 @@
 
 % alterar codigo no 2.4 para ter o mesmo after que o 2.3
 % alterar error handling
-% adicionar exemplos 2.3
+% adicionar exemplos 2.3 e imagem no 1.2
 
 \setlength{\parskip}{\bigskipamount}
 
@@ -458,6 +458,63 @@ The initial concept was not entirely unsuccessful. However the proposal of distr
 \addcontentsline{toc}{subsection}{Non-busy-waiting implementation}
 
 The final approach, was built on top of the previous one, however, with only one difference. Instead of repetitively checking for 0, we only check if a counter is 0, when it is updated after the execution of an isntruction. 
+Figure \ref{fig:after} illustrates some examples of the results obtained with this implementation.
+
+\begin{figure}[htbp]
+\centering
+
+\begin{subfigure}{.48\textwidth}
+\captionsetup{labelformat=empty}
+    \centering
+    \includegraphics[width=1\textwidth]{after11}
+    \caption{Example 1}
+    \label{fig:after11}
+\end{subfigure}
+\begin{subfigure}{.48\textwidth}
+  \captionsetup{labelformat=empty}
+    \centering
+    \includegraphics[width=1\textwidth]{after12}
+    \caption{Result}
+    \label{fig:after12}
+\end{subfigure}
+
+\vspace{0.4cm}
+
+\begin{subfigure}{.48\textwidth}
+  \captionsetup{labelformat=empty}
+    \centering
+    \includegraphics[width=1\textwidth]{after21}
+    \caption{Example 2}
+    \label{fig:after21}
+\end{subfigure}
+\begin{subfigure}{.48\textwidth}
+  \captionsetup{labelformat=empty}
+    \centering
+    \includegraphics[width=1\textwidth]{after22}
+    \caption{Result}
+    \label{fig:after22}
+\end{subfigure}
+
+\vspace{0.4cm}
+
+\begin{subfigure}{.48\textwidth}
+  \captionsetup{labelformat=empty}
+    \centering
+    \includegraphics[width=1\textwidth]{after31}
+    \caption{Example 3}
+    \label{fig:after31}
+\end{subfigure}
+\begin{subfigure}{.48\textwidth}
+  \captionsetup{labelformat=empty}
+    \centering
+    \includegraphics[width=1\textwidth]{after32}
+    \caption{Result}
+    \label{fig:after32}
+\end{subfigure}
+
+\caption{Three examples that demonstrate the dependency mechanism}
+\label{fig:after}
+\end{figure}
 
 \chapter{Conclusion}
 

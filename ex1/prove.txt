@@ -18,7 +18,7 @@ D: weak tau (LTS2)
 
 estado 3
 A: strong sendMoney (LTS2)
-D: Impossivel (LTS1)
+D: Impossible (LTS1)
   LTS1: 
   LTS2: (relLockHin!.relLockZen!.HinZenSend | HinZenSend | relLockHin?.LockHin | relLockZen?.LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
 
