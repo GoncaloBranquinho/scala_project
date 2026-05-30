@@ -4,6 +4,10 @@ import cats.effect.IO
 import org.http4s._
 import org.http4s.dsl.io._
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
+import scala.collection._
+import scala.collection.mutable.Queue
 
 object Routes {
   // Logger object, printing to the file logs/logs.txt
@@ -66,7 +70,18 @@ object Routes {
     }
   }
 
-  def asynchr(s: (String, Option[Int], String)) = {
+  def asynchr(
+      s: (
+          String,
+          Option[Int],
+          Int,
+          Array[Set[Int]],
+          Array[AtomicInteger],
+          Array[
+            (String, Option[Int], Int)
+          ]
+      )
+  ) = {
     state.tasks.synchronized {
       state.tasks.enqueue(s)
       // now notifying
@@ -74,7 +89,7 @@ object Routes {
     }
   }
 
-  def parse(s: String): Option[((String, Option[Int]), Option[List[Int]])] = {
+  def parse(s: String): Option[((String, Option[Int]), List[Int])] = {
     var str = s
     val command = 0
     str = str.trim
@@ -99,14 +114,14 @@ object Routes {
       delayOpt = Some(delay.toInt)
       str = str.dropWhile(n => n.isDigit).trim
     }
-
-    var aftersOpt: Option[List[Int]] = None
+// list of atomic reference integer on asynrh
+    var aftersOpt: List[Int] = List.empty[Int]
     val after_command = str.takeWhile(c => c.isLetter)
     if (after_command != "after" && !after_command.isEmpty) return None
     str = str.dropWhile(c => c.isLetter)
     val afters = str.split(",").map(_.trim).filter(_.nonEmpty)
     if (!afters.forall(n => n.forall(m => m.isDigit))) return None
-    aftersOpt = Some(afters.map(n => n.toInt).toList)
+    aftersOpt = afters.map(n => n.toInt).toList
     Some(((word, delayOpt), aftersOpt))
   }
 
@@ -131,64 +146,44 @@ object Routes {
     val cmds = cmd.split(";").map(_.trim).filter(_.nonEmpty)
     // perocrerr  todos os cmds uma vez para criar map de dependencias
 
+    val dependencies: Array[Set[Int]] =
+      Array.fill(cmds.length + 1)(Set.empty[Int])
+    val counters_list: Array[AtomicInteger] =
+      Array.fill(cmds.length + 1)(new AtomicInteger(0))
+    val codes: Array[
+      (String, Option[Int], Int)
+    ] = Array.fill(cmds.length + 1)(("", None, 0))
+
     var id = 1
     val parse_results = cmds.map(i => {
       val parse_result = parse(i)
       if (parse_result.isDefined) {
         val ((word, delay), aftersOpt) = parse_result.get
-        aftersOpt.foreach { aftersList =>
-          aftersList.foreach { n =>
-            {
-              if (n >= 1 && n < id) {
-                val key = cnt.toString + "_" + n.toString
-                val toAdd = cnt.toString + "_" + id.toString
-                var oldValue = state.dependencies.get
-                var newValue = oldValue.updated(
-                  key,
-                  toAdd :: oldValue.getOrElse(key, List.empty[String])
-                )
-                while (!state.dependencies.compareAndSet(oldValue, newValue)) {
-                  oldValue = state.dependencies.get
-                  newValue = oldValue.updated(
-                    key,
-                    toAdd :: oldValue.getOrElse(key, List.empty[String])
-                  )
-                }
-
-                var oldValue1 = state.dependenciesCounter.get
-                var newValue1 = oldValue1.updated(
-                  toAdd,
-                  oldValue1.getOrElse(toAdd, 0) + 1
-                )
-                while (
-                  !state.dependenciesCounter.compareAndSet(oldValue1, newValue1)
-                ) {
-                  oldValue1 = state.dependenciesCounter.get
-                  newValue1 = oldValue1.updated(
-                    toAdd,
-                    oldValue1.getOrElse(toAdd, 0) + 1
-                  )
-                }
-
-              }
+        codes(id) = (word, delay, id)
+        aftersOpt.foreach { n =>
+          {
+            if (n >= 1 && n < id && !dependencies(n).contains(id)) {
+              dependencies(n) = dependencies(n) + id
+              counters_list(id).incrementAndGet()
             }
           }
         }
       }
       id += 1
-      parse_result
+      (parse_result, id - 1)
     })
-    println(state.dependencies.get)
-    println(state.dependenciesCounter.get)
-    id = 1
-    parse_results.foreach(i => {
+    parse_results.foreach(elem => {
+      val i = elem._1
+      var id = elem._2
       i match {
         case Some(((word, delay), afters)) => {
-          asynchr((word, delay, cnt.toString + "_" + id.toString))
+          if (afters.length == 0) {
+            asynchr((word, delay, id, dependencies, counters_list, codes))
+          }
         }
         case None => {}
       }
-      id += 1
+      id = id + 1
     })
 
     // Printing the received command and user IP to the logs

@@ -6,90 +6,73 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class Worker(
-    tasks: mutable.Queue[(String, Option[Int], String)],
-    content: AtomicReference[List[String]],
-    dependencies: AtomicReference[Map[String, List[String]]],
-    dependenciesCounter: AtomicReference[Map[String, Int]]
+    tasks: mutable.Queue[
+      (
+          String,
+          Option[Int],
+          Int,
+          Array[Set[Int]],
+          Array[AtomicInteger],
+          Array[
+            (String, Option[Int], Int)
+          ]
+      )
+    ],
+    content: AtomicReference[List[String]]
 ) extends Thread {
   setDaemon(true)
   def poll() = tasks.synchronized {
     while (tasks.isEmpty) tasks.wait()
     // now using wait
-    val task = tasks.dequeue()
-    val id = task._3
-    val oldValue = dependenciesCounter.get
-    val task_counter = if (oldValue.contains(id)) {
-      oldValue.get(id).get
-    } else {
-      0
-    }
-    if (task_counter > 0) {
-      tasks.enqueue(task)
-      None
-    } else {
-      var oldValue = dependenciesCounter.get
-      var newValue = oldValue - id
-      while (!dependenciesCounter.compareAndSet(oldValue, newValue)) {
-        oldValue = dependenciesCounter.get
-        newValue = oldValue - id
-      }
-      Some(task)
-    }
-
+    tasks.dequeue()
   }
-
   override def run() = while (true) {
-    poll().foreach(i => {
-      val (str, delayOpt, cnt) = i
-      var delay = delayOpt match {
-        case Some(d) => d
-        case None    => 0
+    val (str, delayOpt, cnt, dependencies, counters_list, codes) = poll()
+    var delay = delayOpt match {
+      case Some(d) => d
+      case None    => 0
+    }
+    Thread.sleep(delay * 1000)
+
+    val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+    val element =
+      "[" ++ LocalDateTime.now().format(formatter) ++ "] " ++ str
+    content.updateAndGet { old =>
+      old :+ element
+    }
+    dependencies(cnt).foreach(key => {
+      if (counters_list(key).decrementAndGet() == 0) {
+        tasks.synchronized {
+          val (a, b, c) = codes(key)
+          tasks.enqueue((a, b, c, dependencies, counters_list, codes))
+          // now notifying
+          tasks.notify()
+        }
+
       }
-      Thread.sleep(delay * 1000)
-
-      val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
-      val element =
-        "[" ++ LocalDateTime.now().format(formatter) ++ "] " ++ str
-      content.updateAndGet { old =>
-        old :+ element
-      }
-      dependencies.get
-        .getOrElse(cnt, List.empty[String])
-        .foreach(key => {
-          var oldValue = dependenciesCounter.get
-          var newValue = oldValue.updated(key, oldValue(key) - 1)
-          while (!dependenciesCounter.compareAndSet(oldValue, newValue)) {
-            oldValue = dependenciesCounter.get
-            newValue = oldValue.updated(key, oldValue(key) - 1)
-
-          }
-
-        })
-      var oldValue = dependencies.get
-      var newValue = oldValue - cnt
-      while (!dependencies.compareAndSet(oldValue, newValue)) {
-        oldValue = dependencies.get
-        newValue = oldValue - cnt
-      }
-
     })
   }
 }
-
 class ServerState(n: Int) {
   // TODO: extend the state of the server
 
   val counter = new AtomicInteger(0)
   val content = new AtomicReference[List[String]](List.empty[String])
-  val dependencies =
-    new AtomicReference[Map[String, List[String]]](
-      Map.empty[String, List[String]]
-    )
-  val dependenciesCounter =
-    new AtomicReference[Map[String, Int]](Map.empty[String, Int])
-  val tasks = mutable.Queue[(String, Option[Int], String)]()
-  (0 until n).map(i => {
-    val worker = new Worker(tasks, content, dependencies, dependenciesCounter)
+  val tasks = mutable
+    .Queue[
+      (
+          String,
+          Option[Int],
+          Int,
+          Array[Set[Int]],
+          Array[AtomicInteger],
+          Array[
+            (String, Option[Int], Int)
+          ]
+      )
+    ]()
+  val workers = (0 until n).map(i => {
+    val worker = new Worker(tasks, content)
     worker.start()
     worker
   })

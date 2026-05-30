@@ -41,7 +41,7 @@ class ServerState(n: Int) {
   val content = new AtomicReference[List[String]](List.empty[String])
 
   val tasks = mutable.Queue[(String, Option[Int])]()
-  (0 until n).map(i => {
+  val workers = (0 until n).map(i => {
     val worker = new Worker(tasks, content)
     worker.start()
     worker

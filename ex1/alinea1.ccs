@@ -1,0 +1,119 @@
+EXERCÍCIO 1.
+
+Exercício 1.1 tentativa dogshit
+{--
+  Pessoa 1: Zen (short for Zenitsu)
+  Pessoa 2: Hin (short for Hinata)
+
+  Locks: 1 ou 2? (partilhado ou não?)
+
+  Objetivo: (HinToZen | ZenToHin | LockHin | LockZen) \ { acqLock, relLock }
+
+  ZenToHin := acqLockZen!.sendMoneyZen!.relLockZen!.ZenToHin | acqLockZen!.sendMoneyHin?.relLockZen!.ZenToHin
+
+  HinToZen := acqLockHin!.sendMoneyHin!.relLockHin!.HinToZen | acqLockHin!.sendMoneyZen?.relLockHin!.HinToZen
+
+  LockHin := acqLockHin?.relLockHin?.LockHin
+
+  LockZen := acqLockZen?.relLockZen?.LockZen
+
+
+
+
+  let
+    HinToZen = (acqLockHin'.sendMoneyHin'.relLockHin'.HinToZen | acqLockHin'.sendMoneyZen.relLockHin'.HinToZen);
+    ZenToHin = (acqLockZen'.sendMoneyZen'.relLockZen'.ZenToHin | acqLockZen'.sendMoneyHin.relLockZen'.ZenToHin);
+    LockHin = acqLockHin.relLockHin.LockHin;
+    LockZen = acqLockZen.relLockZen.LockZen;
+  in
+   (HinToZen | ZenToHin | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen, sendMoneyHin, sendMoneyZen}
+--}
+
+
+
+Exercício 1.1 (Deadlock naive)
+
+let
+  HinToZenDL = acqLockHin'.acqLockZen'.sendMoney.relLockZen'.relLockHin'.HinToZenDL;
+  ZenToHinDL = acqLockZen'.acqLockHin'.sendMoney.relLockHin'.relLockZen'.ZenToHinDL;
+  LockHinDL = acqLockHin.relLockHin.LockHinDL;
+  LockZenDL = acqLockZen.relLockZen.LockZenDL;
+ in
+  (HinToZenDL | ZenToHinDL | LockHinDL | LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+
+Exercício 1.2 (Cuidado que estamos a usar HinZen para ambas direções)
+
+let
+  HinZenSend = acqLockHin'.acqLockZen'.sendMoney.relLockZen'.relLockHin'.HinZenSend;
+  LockHin = acqLockHin.relLockHin.LockHin;
+  LockZen = acqLockZen.relLockZen.LockZen;
+ in
+  (HinZenSend | HinZenSend | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+
+Prova de dogshit do exercício 1.2
+
+(HinToZenDL | ZenToHinDL | LockHinDL | LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+not ~ (weakly bissimilar)
+(HinToZen | ZenToHin | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+
+Prova
+
+
+A (lado naive locks): (HinToZenDL | ZenToHinDL | LockHinDL | LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+--τ-> (acqLockZen'.processMoney.relLockHin'.relLockZen'.ZenToHinDL | ZenToHinDL | relLockHin.LockHinDL | LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+D (lado ordered locks): (HinToZen | ZenToHin | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+==τ=> (HinToZen | ZenToHin | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+A (lado naive locks): (acqLockZen'.processMoney.relLockHin'.relLockZen'.ZenToHinDL | ZenToHinDL | relLockHin.LockHinDL | LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+--τ-> (acqLockZen'.processMoney.relLockHin'.relLockZen'.ZenToHinDL | acqLockHin'.processMoney.relLockHin'.relLockZen'.ZenToHinDL | relLockHin.LockHinDL | relLockZen.LockZenDL) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+D (lado ordered locks): (HinToZen | ZenToHin | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+==τ=> (HinToZen | ZenToHin | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+A (lado ordered locks): (acqLockZen'.processMoney.relLockZen'.relLockHin'.HinToZen; | ZenToHin | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+--τ-> (HinToZen | ZenToHin | LockHin | LockZen) \ {acqLockHin, acqLockZen, relLockHin, relLockZen}
+
+
+
+
+
+
+Exercício 1.3 ACHO EU
+
+
+
+let
+  HinToErenDL = acqLockHin'.acqLockEren'.sendMoney.relLockEren'.relLockHin'.HinToErenDL;
+  ErenToHinDL = acqLockEren'.acqLockHin'.sendMoney.relLockHin'.relLockEren'.ErenToHinDL;
+  ErenToZenDL = acqLockEren'.acqLockZen'.sendMoney.relLockZen'.relLockEren'.ErenToZenDL;
+  ZenToHinDL = acqLockZen'.acqLockHin'.sendMoney.relLockHin'.relLockZen'.ZenToHinDL;
+  LockHinDL = acqLockHin.relLockHin.LockHinDL;
+  LockErenDL = acqLockEren.relLockEren.LockErenDL;
+  LockZenDL = acqLockZen.relLockZen.LockZenDL;
+in
+  (HinToErenDL | ErenToHinDL | ErenToZenDL | ZenToHinDL | LockHinDL | LockErenDL | LockZenDL) \ {acqLockHin, acqLockZen, acqLockEren, relLockHin, relLockZen, relLockEren}
+
+
+
+
+
+
+Exercício 1.4 (naive)
+
+FromTo[x, y] := (when (x < y) acqLock!x.acqLock!y.sendMoney.relLock!y.relLock!x.FromTo[x, y]) + (when (x >= y) acqLock!y.acqLock!x.sendMoney.relLock!x.relLock!y.FromTo[x, y])
+Lock[x] := acqLock?x.relLock?x.Lock[x]
+
+(FromTo[1, 2] | FromTo[2, 1] | FromTo[1, 3] | FromTo[3, 1] | FromTo[2, 3] | FromTo[3, 2] | Lock[1] | Lock[2] | Lock[3]) \ {acqLock, relLock}
+
+
+Exercício 1.4 (acho eu, verifica pfv)
+
+FromTo[x, y] := (when (x < y) acqLock!x.ackAcqLock?z : Int.(when (x == z) acqLock!y.ackAcqLock?z : Int.(when (y == z) sendMoney.relLock!y.ackRelLock?z : Int.(when (y == z) relLock!x.ackRelLock?z : Int.(when (x == z) FromTo[x, y]))))) + (when (x >= y) acqLock!y.ackAcqLock?z : Int.(when (y == z) acqLock!x.ackAcqLock?z : Int.(when (x == z) sendMoney.relLock!x.ackRelLock?z : Int.(when (x == z) relLock!y.ackRelLock?z : Int.(when (y == z) FromTo[x, y])))))
+
+Lock[x] := acqLock?z.(when (x == z) ackAcqLock!x.relLock?z.(when (x == z) ackRelLock!x.Lock[x]))
+
+(FromTo[1, 2] | FromTo[2, 1] | FromTo[1, 3] | FromTo[3, 1] | FromTo[2, 3] | FromTo[3, 2] | Lock[1] | Lock[2] | Lock[3]) \ {acqLock, relLock}
